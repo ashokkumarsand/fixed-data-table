@@ -44,6 +44,7 @@ var FixedDataTableBufferedRows = React.createClass({
     scrollableColumns: PropTypes.array.isRequired,
     showLastRowBorder: PropTypes.bool,
     width: PropTypes.number.isRequired,
+    focusedRowIndex: PropTypes.number.isRequired
   },
 
   getInitialState() /*object*/ {
@@ -151,6 +152,7 @@ var FixedDataTableBufferedRows = React.createClass({
               'public/fixedDataTable/hasBottomBorder': hasBottomBorder,
             })
           )}
+          isFocused={rowIndex === this.props.focusedRowIndex}
         />;
     }
 

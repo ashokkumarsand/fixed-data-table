@@ -1,5 +1,5 @@
 /**
- * FixedDataTable v0.6.3 
+ * FixedDataTable v0.6.4 
  *
  * Copyright (c) 2015, Facebook, Inc.
  * All rights reserved.
@@ -138,7 +138,12 @@
 .public_fixedDataTableRow_columnsShadow {
   background: 0 0 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAABCAYAAAD5PA/NAAAAFklEQVQIHWPSkNeSBmJhTQVtbiDNCgASagIIuJX8OgAAAABJRU5ErkJggg==) repeat-y;
 }
-/**
+
+.public_fixedDataTableRow_focused {
+  box-shadow: 0 0 5px rgba(81, 203, 238, 1);
+  border: 1px solid rgba(81, 203, 238, 1);
+  box-sizing: border-box;
+}/**
  * Copyright (c) 2015, Facebook, Inc.
  * All rights reserved.
  *

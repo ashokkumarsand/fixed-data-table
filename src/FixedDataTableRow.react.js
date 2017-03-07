@@ -84,6 +84,8 @@ var FixedDataTableRowImpl = React.createClass({
      * @param object event
      */
     onColumnResize: PropTypes.func,
+    
+    isFocused: PropTypes.bool,
   },
 
   render() /*object*/ {
@@ -98,6 +100,7 @@ var FixedDataTableRowImpl = React.createClass({
       'public/fixedDataTableRow/highlighted': (this.props.index % 2 === 1),
       'public/fixedDataTableRow/odd': (this.props.index % 2 === 1),
       'public/fixedDataTableRow/even': (this.props.index % 2 === 0),
+      'public/fixedDataTableRow/focused': this.props.isFocused,
     });
 
     var fixedColumnsWidth = this._getColumnsWidth(this.props.fixedColumns);
@@ -232,7 +235,7 @@ var FixedDataTableRow = React.createClass({
     return (
       <div
         style={style}
-        className={cx('fixedDataTableRowLayout/rowWrapper')}>
+        className={cx('fixedDataTableRowLayout/rowWrapper')} role="row">
         <FixedDataTableRowImpl
           {...this.props}
           offsetTop={undefined}

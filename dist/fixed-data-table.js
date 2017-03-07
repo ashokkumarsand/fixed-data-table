@@ -1,5 +1,5 @@
 /**
- * FixedDataTable v0.6.3 
+ * FixedDataTable v0.6.4 
  *
  * Copyright (c) 2015, Facebook, Inc.
  * All rights reserved.
@@ -187,7 +187,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Table: FixedDataTable
 	};
 
-	FixedDataTableRoot.version = '0.6.3';
+	FixedDataTableRoot.version = '0.6.4';
 	module.exports = FixedDataTableRoot;
 
 /***/ },
@@ -225,11 +225,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// New Table API
 	var Table = __webpack_require__(29);
-	var Column = __webpack_require__(73);
-	var ColumnGroup = __webpack_require__(74);
+	var Column = __webpack_require__(87);
+	var ColumnGroup = __webpack_require__(88);
 
 	// Transition Cell
-	var TransitionCell = __webpack_require__(75);
+	var TransitionCell = __webpack_require__(89);
 
 	var NEXT_VERSION = '0.7.0';
 	var DOCUMENTATION_URL = 'https://fburl.com/FixedDataTable-v0.6';
@@ -743,6 +743,12 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
+	'use strict';
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+	function _createDecoratedObject(descriptors) { var target = {}; for (var i = 0; i < descriptors.length; i++) { var descriptor = descriptors[i]; var decorators = descriptor.decorators; var key = descriptor.key; delete descriptor.key; delete descriptor.decorators; descriptor.enumerable = true; descriptor.configurable = true; if ('value' in descriptor || descriptor.initializer) descriptor.writable = true; if (decorators) { for (var f = 0; f < decorators.length; f++) { var decorator = decorators[f]; if (typeof decorator === 'function') { descriptor = decorator(target, key, descriptor) || descriptor; } else { throw new TypeError('The decorator for method ' + descriptor.key + ' is of the invalid type ' + typeof decorator); } } } if (descriptor.initializer) { descriptor.value = descriptor.initializer.call(target); } Object.defineProperty(target, key, descriptor); } return target; }
+
 	/**
 	 * Copyright (c) 2015, Facebook, Inc.
 	 * All rights reserved.
@@ -757,10 +763,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	/*eslint no-bitwise:1*/
-
-	'use strict';
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 	var React = __webpack_require__(27);
 	var ReactComponentWithPureRenderMixin = __webpack_require__(30);
@@ -779,6 +781,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var joinClasses = __webpack_require__(66);
 	var shallowEqual = __webpack_require__(72);
 	var translateDOMPositionXY = __webpack_require__(48);
+	var keydown = __webpack_require__(73);
 
 	var PropTypes = React.PropTypes;
 
@@ -836,175 +839,182 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * - Scrollable Body Columns: The body columns that move while scrolling
 	 *   vertically or horizontally.
 	 */
-	var FixedDataTable = React.createClass({
-	  displayName: 'FixedDataTable',
+	var FixedDataTable = React.createClass(_createDecoratedObject([{
+	  key: 'displayName',
+	  initializer: function initializer() {
+	    return 'FixedDataTable';
+	  }
+	}, {
+	  key: 'propTypes',
+	  initializer: function initializer() {
+	    return {
 
-	  propTypes: {
+	      /**
+	       * Pixel width of table. If all columns do not fit,
+	       * a horizontal scrollbar will appear.
+	       */
+	      width: PropTypes.number.isRequired,
 
-	    /**
-	     * Pixel width of table. If all columns do not fit,
-	     * a horizontal scrollbar will appear.
-	     */
-	    width: PropTypes.number.isRequired,
+	      /**
+	       * Pixel height of table. If all rows do not fit,
+	       * a vertical scrollbar will appear.
+	       *
+	       * Either `height` or `maxHeight` must be specified.
+	       */
+	      height: PropTypes.number,
 
-	    /**
-	     * Pixel height of table. If all rows do not fit,
-	     * a vertical scrollbar will appear.
-	     *
-	     * Either `height` or `maxHeight` must be specified.
-	     */
-	    height: PropTypes.number,
+	      /**
+	       * Maximum pixel height of table. If all rows do not fit,
+	       * a vertical scrollbar will appear.
+	       *
+	       * Either `height` or `maxHeight` must be specified.
+	       */
+	      maxHeight: PropTypes.number,
 
-	    /**
-	     * Maximum pixel height of table. If all rows do not fit,
-	     * a vertical scrollbar will appear.
-	     *
-	     * Either `height` or `maxHeight` must be specified.
-	     */
-	    maxHeight: PropTypes.number,
+	      /**
+	       * Pixel height of table's owner, this is used in a managed scrolling
+	       * situation when you want to slide the table up from below the fold
+	       * without having to constantly update the height on every scroll tick.
+	       * Instead, vary this property on scroll. By using `ownerHeight`, we
+	       * over-render the table while making sure the footer and horizontal
+	       * scrollbar of the table are visible when the current space for the table
+	       * in view is smaller than the final, over-flowing height of table. It
+	       * allows us to avoid resizing and reflowing table when it is moving in the
+	       * view.
+	       *
+	       * This is used if `ownerHeight < height` (or `maxHeight`).
+	       */
+	      ownerHeight: PropTypes.number,
 
-	    /**
-	     * Pixel height of table's owner, this is used in a managed scrolling
-	     * situation when you want to slide the table up from below the fold
-	     * without having to constantly update the height on every scroll tick.
-	     * Instead, vary this property on scroll. By using `ownerHeight`, we
-	     * over-render the table while making sure the footer and horizontal
-	     * scrollbar of the table are visible when the current space for the table
-	     * in view is smaller than the final, over-flowing height of table. It
-	     * allows us to avoid resizing and reflowing table when it is moving in the
-	     * view.
-	     *
-	     * This is used if `ownerHeight < height` (or `maxHeight`).
-	     */
-	    ownerHeight: PropTypes.number,
+	      overflowX: PropTypes.oneOf(['hidden', 'auto']),
+	      overflowY: PropTypes.oneOf(['hidden', 'auto']),
 
-	    overflowX: PropTypes.oneOf(['hidden', 'auto']),
-	    overflowY: PropTypes.oneOf(['hidden', 'auto']),
+	      /**
+	       * Number of rows in the table.
+	       */
+	      rowsCount: PropTypes.number.isRequired,
 
-	    /**
-	     * Number of rows in the table.
-	     */
-	    rowsCount: PropTypes.number.isRequired,
+	      /**
+	       * Pixel height of rows unless `rowHeightGetter` is specified and returns
+	       * different value.
+	       */
+	      rowHeight: PropTypes.number.isRequired,
 
-	    /**
-	     * Pixel height of rows unless `rowHeightGetter` is specified and returns
-	     * different value.
-	     */
-	    rowHeight: PropTypes.number.isRequired,
+	      /**
+	       * If specified, `rowHeightGetter(index)` is called for each row and the
+	       * returned value overrides `rowHeight` for particular row.
+	       */
+	      rowHeightGetter: PropTypes.func,
 
-	    /**
-	     * If specified, `rowHeightGetter(index)` is called for each row and the
-	     * returned value overrides `rowHeight` for particular row.
-	     */
-	    rowHeightGetter: PropTypes.func,
+	      /**
+	       * To get any additional CSS classes that should be added to a row,
+	       * `rowClassNameGetter(index)` is called.
+	       */
+	      rowClassNameGetter: PropTypes.func,
 
-	    /**
-	     * To get any additional CSS classes that should be added to a row,
-	     * `rowClassNameGetter(index)` is called.
-	     */
-	    rowClassNameGetter: PropTypes.func,
+	      /**
+	       * Pixel height of the column group header.
+	       */
+	      groupHeaderHeight: PropTypes.number,
 
-	    /**
-	     * Pixel height of the column group header.
-	     */
-	    groupHeaderHeight: PropTypes.number,
+	      /**
+	       * Pixel height of header.
+	       */
+	      headerHeight: PropTypes.number.isRequired,
 
-	    /**
-	     * Pixel height of header.
-	     */
-	    headerHeight: PropTypes.number.isRequired,
+	      /**
+	       * Pixel height of footer.
+	       */
+	      footerHeight: PropTypes.number,
 
-	    /**
-	     * Pixel height of footer.
-	     */
-	    footerHeight: PropTypes.number,
+	      /**
+	       * Value of horizontal scroll.
+	       */
+	      scrollLeft: PropTypes.number,
 
-	    /**
-	     * Value of horizontal scroll.
-	     */
-	    scrollLeft: PropTypes.number,
+	      /**
+	       * Index of column to scroll to.
+	       */
+	      scrollToColumn: PropTypes.number,
 
-	    /**
-	     * Index of column to scroll to.
-	     */
-	    scrollToColumn: PropTypes.number,
+	      /**
+	       * Value of vertical scroll.
+	       */
+	      scrollTop: PropTypes.number,
 
-	    /**
-	     * Value of vertical scroll.
-	     */
-	    scrollTop: PropTypes.number,
+	      /**
+	       * Index of row to scroll to.
+	       */
+	      scrollToRow: PropTypes.number,
 
-	    /**
-	     * Index of row to scroll to.
-	     */
-	    scrollToRow: PropTypes.number,
+	      /**
+	       * Callback that is called when scrolling starts with current horizontal
+	       * and vertical scroll values.
+	       */
+	      onScrollStart: PropTypes.func,
 
-	    /**
-	     * Callback that is called when scrolling starts with current horizontal
-	     * and vertical scroll values.
-	     */
-	    onScrollStart: PropTypes.func,
+	      /**
+	       * Callback that is called when scrolling ends or stops with new horizontal
+	       * and vertical scroll values.
+	       */
+	      onScrollEnd: PropTypes.func,
 
-	    /**
-	     * Callback that is called when scrolling ends or stops with new horizontal
-	     * and vertical scroll values.
-	     */
-	    onScrollEnd: PropTypes.func,
+	      /**
+	       * Callback that is called when `rowHeightGetter` returns a different height
+	       * for a row than the `rowHeight` prop. This is necessary because initially
+	       * table estimates heights of some parts of the content.
+	       */
+	      onContentHeightChange: PropTypes.func,
 
-	    /**
-	     * Callback that is called when `rowHeightGetter` returns a different height
-	     * for a row than the `rowHeight` prop. This is necessary because initially
-	     * table estimates heights of some parts of the content.
-	     */
-	    onContentHeightChange: PropTypes.func,
+	      /**
+	       * Callback that is called when a row is clicked.
+	       */
+	      onRowClick: PropTypes.func,
 
-	    /**
-	     * Callback that is called when a row is clicked.
-	     */
-	    onRowClick: PropTypes.func,
+	      /**
+	       * Callback that is called when a row is double clicked.
+	       */
+	      onRowDoubleClick: PropTypes.func,
 
-	    /**
-	     * Callback that is called when a row is double clicked.
-	     */
-	    onRowDoubleClick: PropTypes.func,
+	      /**
+	       * Callback that is called when a mouse-down event happens on a row.
+	       */
+	      onRowMouseDown: PropTypes.func,
 
-	    /**
-	     * Callback that is called when a mouse-down event happens on a row.
-	     */
-	    onRowMouseDown: PropTypes.func,
+	      /**
+	       * Callback that is called when a mouse-enter event happens on a row.
+	       */
+	      onRowMouseEnter: PropTypes.func,
 
-	    /**
-	     * Callback that is called when a mouse-enter event happens on a row.
-	     */
-	    onRowMouseEnter: PropTypes.func,
+	      /**
+	       * Callback that is called when a mouse-leave event happens on a row.
+	       */
+	      onRowMouseLeave: PropTypes.func,
 
-	    /**
-	     * Callback that is called when a mouse-leave event happens on a row.
-	     */
-	    onRowMouseLeave: PropTypes.func,
+	      /**
+	       * Callback that is called when resizer has been released
+	       * and column needs to be updated.
+	       *
+	       * Required if the isResizable property is true on any column.
+	       *
+	       * ```
+	       * function(
+	       *   newColumnWidth: number,
+	       *   columnKey: string,
+	       * )
+	       * ```
+	       */
+	      onColumnResizeEndCallback: PropTypes.func,
 
-	    /**
-	     * Callback that is called when resizer has been released
-	     * and column needs to be updated.
-	     *
-	     * Required if the isResizable property is true on any column.
-	     *
-	     * ```
-	     * function(
-	     *   newColumnWidth: number,
-	     *   columnKey: string,
-	     * )
-	     * ```
-	     */
-	    onColumnResizeEndCallback: PropTypes.func,
-
-	    /**
-	     * Whether a column is currently being resized.
-	     */
-	    isColumnResizing: PropTypes.bool
-	  },
-
-	  getDefaultProps: function getDefaultProps() /*object*/{
+	      /**
+	       * Whether a column is currently being resized.
+	       */
+	      isColumnResizing: PropTypes.bool
+	    };
+	  }
+	}, {
+	  key: 'getDefaultProps',
+	  value: function getDefaultProps() /*object*/{
 	    return {
 	      footerHeight: 0,
 	      groupHeaderHeight: 0,
@@ -1012,9 +1022,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      scrollLeft: 0,
 	      scrollTop: 0
 	    };
-	  },
-
-	  getInitialState: function getInitialState() /*object*/{
+	  }
+	}, {
+	  key: 'getInitialState',
+	  value: function getInitialState() /*object*/{
 	    var props = this.props;
 	    var viewportHeight = (props.height === undefined ? props.maxHeight : props.height) - (props.headerHeight || 0) - (props.footerHeight || 0) - (props.groupHeaderHeight || 0);
 	    this._scrollHelper = new FixedDataTableScrollHelper(props.rowsCount, props.rowHeight, viewportHeight, props.rowHeightGetter);
@@ -1024,9 +1035,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this._didScrollStop = debounceCore(this._didScrollStop, 200, this);
 
 	    return this._calculateState(this.props);
-	  },
-
-	  componentWillMount: function componentWillMount() {
+	  }
+	}, {
+	  key: 'componentWillMount',
+	  value: function componentWillMount() {
 	    var scrollToRow = this.props.scrollToRow;
 	    if (scrollToRow !== undefined && scrollToRow !== null) {
 	      this._rowToScrollTo = scrollToRow;
@@ -1036,9 +1048,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._columnToScrollTo = scrollToColumn;
 	    }
 	    this._wheelHandler = new ReactWheelHandler(this._onWheel, this._shouldHandleWheelX, this._shouldHandleWheelY);
-	  },
-
-	  _shouldHandleWheelX: function _shouldHandleWheelX( /*number*/delta) /*boolean*/{
+	  }
+	}, {
+	  key: '_shouldHandleWheelX',
+	  value: function _shouldHandleWheelX( /*number*/delta) /*boolean*/{
 	    if (this.props.overflowX === 'hidden') {
 	      return false;
 	    }
@@ -1049,9 +1062,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    return delta < 0 && this.state.scrollX > 0 || delta >= 0 && this.state.scrollX < this.state.maxScrollX;
-	  },
-
-	  _shouldHandleWheelY: function _shouldHandleWheelY( /*number*/delta) /*boolean*/{
+	  }
+	}, {
+	  key: '_shouldHandleWheelY',
+	  value: function _shouldHandleWheelY( /*number*/delta) /*boolean*/{
 	    if (this.props.overflowY === 'hidden' || delta === 0) {
 	      return false;
 	    }
@@ -1062,9 +1076,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    return delta < 0 && this.state.scrollY > 0 || delta >= 0 && this.state.scrollY < this.state.maxScrollY;
-	  },
-
-	  _reportContentHeight: function _reportContentHeight() {
+	  }
+	}, {
+	  key: '_reportContentHeight',
+	  value: function _reportContentHeight() {
 	    var scrollContentHeight = this.state.scrollContentHeight;
 	    var reservedHeight = this.state.reservedHeight;
 	    var requiredHeight = scrollContentHeight + reservedHeight;
@@ -1081,13 +1096,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.props.onContentHeightChange(contentHeight);
 	    }
 	    this._contentHeight = contentHeight;
-	  },
-
-	  componentDidMount: function componentDidMount() {
+	  }
+	}, {
+	  key: 'componentDidMount',
+	  value: function componentDidMount() {
 	    this._reportContentHeight();
-	  },
-
-	  componentWillReceiveProps: function componentWillReceiveProps( /*object*/nextProps) {
+	  }
+	}, {
+	  key: 'componentWillReceiveProps',
+	  value: function componentWillReceiveProps( /*object*/nextProps) {
 	    var scrollToRow = nextProps.scrollToRow;
 	    if (scrollToRow !== undefined && scrollToRow !== null) {
 	      this._rowToScrollTo = scrollToRow;
@@ -1112,16 +1129,41 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this._didScrollStop();
 
 	    this.setState(this._calculateState(nextProps, this.state));
-	  },
-
-	  componentDidUpdate: function componentDidUpdate() {
+	  }
+	}, {
+	  key: 'componentDidUpdate',
+	  value: function componentDidUpdate() {
 	    this._reportContentHeight();
-	  },
-
-	  render: function render() /*object*/{
+	  }
+	}, {
+	  key: 'KeyUp',
+	  decorators: [keydown['default']('up')],
+	  value: function KeyUp() {
+	    var focusedRowIndex = this.state.focusedRowIndex > 0 ? this.state.focusedRowIndex - 1 : 0;
+	    var scrollState = this._scrollHelper.scrollRowIntoView(focusedRowIndex);
+	    var firstRowIndex = scrollState.index;
+	    var firstRowOffset = scrollState.offset;
+	    var scrollY = scrollState.position;
+	    var newState = _extends({}, { focusedRowIndex: focusedRowIndex, firstRowIndex: firstRowIndex, firstRowOffset: firstRowOffset, scrollY: scrollY });
+	    this.setState(newState);
+	  }
+	}, {
+	  key: 'keyDown',
+	  decorators: [keydown['default']('down')],
+	  value: function keyDown() {
+	    var focusedRowIndex = this.state.focusedRowIndex < this.state.rowsCount ? this.state.focusedRowIndex + 1 : this.state.rowsCount;
+	    var scrollState = this._scrollHelper.scrollRowIntoView(focusedRowIndex);
+	    var firstRowIndex = scrollState.index;
+	    var firstRowOffset = scrollState.offset;
+	    var scrollY = scrollState.position;
+	    var newState = _extends({}, { focusedRowIndex: focusedRowIndex, firstRowIndex: firstRowIndex, firstRowOffset: firstRowOffset, scrollY: scrollY });
+	    this.setState(newState);
+	  }
+	}, {
+	  key: 'render',
+	  value: function render() /*object*/{
 	    var state = this.state;
 	    var props = this.props;
-
 	    var groupHeader;
 	    if (state.useGroupHeader) {
 	      groupHeader = React.createElement(FixedDataTableRow, {
@@ -1269,9 +1311,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      verticalScrollbar,
 	      horizontalScrollbar
 	    );
-	  },
-
-	  _renderRows: function _renderRows( /*number*/offsetTop) /*object*/{
+	  }
+	}, {
+	  key: '_renderRows',
+	  value: function _renderRows( /*number*/offsetTop) /*object*/{
 	    var state = this.state;
 
 	    return React.createElement(FixedDataTableBufferedRows, {
@@ -1295,16 +1338,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	      scrollableColumns: state.bodyScrollableColumns,
 	      showLastRowBorder: true,
 	      width: state.width,
-	      rowPositionGetter: this._scrollHelper.getRowPosition
+	      rowPositionGetter: this._scrollHelper.getRowPosition,
+	      focusedRowIndex: state.focusedRowIndex
 	    });
-	  },
+	  }
+	}, {
+	  key: '_onColumnResize',
 
 	  /**
 	   * This is called when a cell that is in the header of a column has its
 	   * resizer knob clicked on. It displays the resizer and puts in the correct
 	   * location on the table.
 	   */
-	  _onColumnResize: function _onColumnResize(
+	  value: function _onColumnResize(
 	  /*number*/combinedWidth,
 	  /*number*/leftOffset,
 	  /*number*/cellWidth,
@@ -1327,9 +1373,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        key: columnKey
 	      }
 	    });
-	  },
-
-	  _areColumnSettingsIdentical: function _areColumnSettingsIdentical(oldColumns, newColumns) {
+	  }
+	}, {
+	  key: '_areColumnSettingsIdentical',
+	  value: function _areColumnSettingsIdentical(oldColumns, newColumns) {
 	    if (oldColumns.length !== newColumns.length) {
 	      return false;
 	    }
@@ -1339,9 +1386,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 	    return true;
-	  },
-
-	  _populateColumnsAndColumnData: function _populateColumnsAndColumnData(columns, columnGroups, oldState) {
+	  }
+	}, {
+	  key: '_populateColumnsAndColumnData',
+	  value: function _populateColumnsAndColumnData(columns, columnGroups, oldState) {
 	    var canReuseColumnSettings = false;
 	    var canReuseColumnGroupSettings = false;
 
@@ -1386,9 +1434,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    return columnInfo;
-	  },
-
-	  _calculateState: function _calculateState( /*object*/props, /*?object*/oldState) /*object*/{
+	  }
+	}, {
+	  key: '_calculateState',
+	  value: function _calculateState( /*object*/props, /*?object*/oldState) /*object*/{
 	    invariant(props.height !== undefined || props.maxHeight !== undefined, 'You must set either a height or a maxHeight');
 
 	    var children = [];
@@ -1549,7 +1598,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      scrollContentHeight: scrollContentHeight,
 	      scrollX: scrollX,
 	      scrollY: scrollY,
-
+	      focusedRowIndex: 0,
 	      // These properties may overwrite properties defined in
 	      // columnInfo and props
 	      bodyHeight: bodyHeight,
@@ -1559,9 +1608,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 
 	    return newState;
-	  },
-
-	  _selectColumnElement: function _selectColumnElement( /*string*/type, /*array*/columns) /*array*/{
+	  }
+	}, {
+	  key: '_selectColumnElement',
+	  value: function _selectColumnElement( /*string*/type, /*array*/columns) /*array*/{
 	    var newColumns = [];
 	    for (var i = 0; i < columns.length; ++i) {
 	      var column = columns[i];
@@ -1570,9 +1620,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }));
 	    }
 	    return newColumns;
-	  },
-
-	  _splitColumnTypes: function _splitColumnTypes( /*array*/columns) /*object*/{
+	  }
+	}, {
+	  key: '_splitColumnTypes',
+	  value: function _splitColumnTypes( /*array*/columns) /*object*/{
 	    var fixedColumns = [];
 	    var scrollableColumns = [];
 	    for (var i = 0; i < columns.length; ++i) {
@@ -1586,9 +1637,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      fixed: fixedColumns,
 	      scrollable: scrollableColumns
 	    };
-	  },
-
-	  _onWheel: function _onWheel( /*number*/deltaX, /*number*/deltaY) {
+	  }
+	}, {
+	  key: '_onWheel',
+	  value: function _onWheel( /*number*/deltaX, /*number*/deltaY) {
 	    if (this.isMounted()) {
 	      if (!this._isScrolling) {
 	        this._didScrollStart();
@@ -1615,9 +1667,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      this._didScrollStop();
 	    }
-	  },
-
-	  _onHorizontalScroll: function _onHorizontalScroll( /*number*/scrollPos) {
+	  }
+	}, {
+	  key: '_onHorizontalScroll',
+	  value: function _onHorizontalScroll( /*number*/scrollPos) {
 	    if (this.isMounted() && scrollPos !== this.state.scrollX) {
 	      if (!this._isScrolling) {
 	        this._didScrollStart();
@@ -1627,9 +1680,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 	      this._didScrollStop();
 	    }
-	  },
-
-	  _onVerticalScroll: function _onVerticalScroll( /*number*/scrollPos) {
+	  }
+	}, {
+	  key: '_onVerticalScroll',
+	  value: function _onVerticalScroll( /*number*/scrollPos) {
 	    if (this.isMounted() && scrollPos !== this.state.scrollY) {
 	      if (!this._isScrolling) {
 	        this._didScrollStart();
@@ -1643,18 +1697,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 	      this._didScrollStop();
 	    }
-	  },
-
-	  _didScrollStart: function _didScrollStart() {
+	  }
+	}, {
+	  key: '_didScrollStart',
+	  value: function _didScrollStart() {
 	    if (this.isMounted() && !this._isScrolling) {
 	      this._isScrolling = true;
 	      if (this.props.onScrollStart) {
 	        this.props.onScrollStart(this.state.scrollX, this.state.scrollY);
 	      }
 	    }
-	  },
-
-	  _didScrollStop: function _didScrollStop() {
+	  }
+	}, {
+	  key: '_didScrollStop',
+	  value: function _didScrollStop() {
 	    if (this.isMounted() && this._isScrolling) {
 	      this._isScrolling = false;
 	      this.setState({ redraw: true });
@@ -1663,7 +1719,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 	  }
-	});
+	}]));
 
 	var HorizontalScrollbar = React.createClass({
 	  displayName: 'HorizontalScrollbar',
@@ -3796,7 +3852,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    scrollLeft: PropTypes.number.isRequired,
 	    scrollableColumns: PropTypes.array.isRequired,
 	    showLastRowBorder: PropTypes.bool,
-	    width: PropTypes.number.isRequired
+	    width: PropTypes.number.isRequired,
+	    focusedRowIndex: PropTypes.number.isRequired
 	  },
 
 	  getInitialState: function getInitialState() /*object*/{
@@ -3877,7 +3934,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        className: joinClasses(rowClassNameGetter(rowIndex), cx('public/fixedDataTable/bodyRow'), cx({
 	          'fixedDataTableLayout/hasBottomBorder': hasBottomBorder,
 	          'public/fixedDataTable/hasBottomBorder': hasBottomBorder
-	        }))
+	        })),
+	        isFocused: rowIndex === this.props.focusedRowIndex
 	      });
 	    }
 
@@ -4530,7 +4588,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @param number|string columnKey
 	     * @param object event
 	     */
-	    onColumnResize: PropTypes.func
+	    onColumnResize: PropTypes.func,
+
+	    isFocused: PropTypes.bool
 	  },
 
 	  render: function render() /*object*/{
@@ -4544,7 +4604,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      'public/fixedDataTableRow/main': true,
 	      'public/fixedDataTableRow/highlighted': this.props.index % 2 === 1,
 	      'public/fixedDataTableRow/odd': this.props.index % 2 === 1,
-	      'public/fixedDataTableRow/even': this.props.index % 2 === 0
+	      'public/fixedDataTableRow/even': this.props.index % 2 === 0,
+	      'public/fixedDataTableRow/focused': this.props.isFocused
 	    });
 
 	    var fixedColumnsWidth = this._getColumnsWidth(this.props.fixedColumns);
@@ -4681,7 +4742,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      'div',
 	      {
 	        style: style,
-	        className: cx('fixedDataTableRowLayout/rowWrapper') },
+	        className: cx('fixedDataTableRowLayout/rowWrapper'), role: 'row' },
 	      React.createElement(FixedDataTableRowImpl, _extends({}, this.props, {
 	        offsetTop: undefined,
 	        zIndex: undefined
@@ -6471,6 +6532,1256 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
+	// polyfill array.from (mainly for IE)
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequire(obj) { return obj && obj.__esModule ? obj['default'] : obj; }
+
+	__webpack_require__(74);
+
+	// @keydown and @keydownScoped
+
+	var _decorators = __webpack_require__(75);
+
+	exports['default'] = _interopRequire(_decorators);
+	Object.defineProperty(exports, 'keydownScoped', {
+	  enumerable: true,
+	  get: function get() {
+	    return _decorators.keydownScoped;
+	  }
+	});
+
+	// setBinding - only useful if you're not going to use decorators
+
+	var _store = __webpack_require__(77);
+
+	Object.defineProperty(exports, 'setBinding', {
+	  enumerable: true,
+	  get: function get() {
+	    return _store.setBinding;
+	  }
+	});
+
+	// Keys - use this to find key codes for strings. for example: Keys.j, Keys.enter
+
+	var _libKeys = __webpack_require__(78);
+
+	exports.Keys = _interopRequire(_libKeys);
+
+/***/ },
+/* 74 */
+/***/ function(module, exports) {
+
+	// Production steps of ECMA-262, Edition 6, 22.1.2.1
+	// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/from
+	'use strict';
+
+	if (!Array.from) {
+	  Array.from = (function () {
+	    var toStr = Object.prototype.toString;
+	    var isCallable = function isCallable(fn) {
+	      return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
+	    };
+	    var toInteger = function toInteger(value) {
+	      var number = Number(value);
+	      if (isNaN(number)) {
+	        return 0;
+	      }
+	      if (number === 0 || !isFinite(number)) {
+	        return number;
+	      }
+	      return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
+	    };
+	    var maxSafeInteger = Math.pow(2, 53) - 1;
+	    var toLength = function toLength(value) {
+	      var len = toInteger(value);
+	      return Math.min(Math.max(len, 0), maxSafeInteger);
+	    };
+
+	    // The length property of the from method is 1.
+	    return function from(arrayLike /*, mapFn, thisArg */) {
+	      // 1. Let C be the this value.
+	      var C = this;
+
+	      // 2. Let items be ToObject(arrayLike).
+	      var items = Object(arrayLike);
+
+	      // 3. ReturnIfAbrupt(items).
+	      if (arrayLike == null) {
+	        throw new TypeError("Array.from requires an array-like object - not null or undefined");
+	      }
+
+	      // 4. If mapfn is undefined, then let mapping be false.
+	      var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
+	      var T;
+	      if (typeof mapFn !== 'undefined') {
+	        // 5. else
+	        // 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
+	        if (!isCallable(mapFn)) {
+	          throw new TypeError('Array.from: when provided, the second argument must be a function');
+	        }
+
+	        // 5. b. If thisArg was supplied, let T be thisArg; else let T be undefined.
+	        if (arguments.length > 2) {
+	          T = arguments[2];
+	        }
+	      }
+
+	      // 10. Let lenValue be Get(items, "length").
+	      // 11. Let len be ToLength(lenValue).
+	      var len = toLength(items.length);
+
+	      // 13. If IsConstructor(C) is true, then
+	      // 13. a. Let A be the result of calling the [[Construct]] internal method
+	      // of C with an argument list containing the single item len.
+	      // 14. a. Else, Let A be ArrayCreate(len).
+	      var A = isCallable(C) ? Object(new C(len)) : new Array(len);
+
+	      // 16. Let k be 0.
+	      var k = 0;
+	      // 17. Repeat, while k < len… (also steps a - h)
+	      var kValue;
+	      while (k < len) {
+	        kValue = items[k];
+	        if (mapFn) {
+	          A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
+	        } else {
+	          A[k] = kValue;
+	        }
+	        k += 1;
+	      }
+	      // 18. Let putStatus be Put(A, "length", len, true).
+	      A.length = len;
+	      // 20. Return A.
+	      return A;
+	    };
+	  })();
+	}
+
+/***/ },
+/* 75 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @module decorators
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _class_decorator = __webpack_require__(76);
+
+	var _class_decorator2 = _interopRequireDefault(_class_decorator);
+
+	var _method_decorator = __webpack_require__(85);
+
+	var _method_decorator2 = _interopRequireDefault(_method_decorator);
+
+	var _method_decorator_scoped = __webpack_require__(86);
+
+	var _method_decorator_scoped2 = _interopRequireDefault(_method_decorator_scoped);
+
+	/**
+	 * _decorator
+	 *
+	 * @access private
+	 * @param {Function} methodFn The method wrapper to delegate to, based on whether user has specified a scoped decorator or not
+	 * @param {Array} ...args Remainder of arguments passed in
+	 * @return {Function} The decorated class or method
+	 */
+	function _decorator(methodFn) {
+	  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	    args[_key - 1] = arguments[_key];
+	  }
+
+	  // check the first argument to see if it's a user-supplied keycode or array
+	  // of keycodes, or if it's the wrapped class or method
+	  var testArg = args[0];
+	  var isArray = Array.isArray(testArg);
+
+	  // if the test argument is not an object or function, it is user-supplied
+	  // keycodes. else there are no arguments and it's just the wrapped class
+	  // (method decorators must have keycode arguments).
+	  if (isArray || ~['string', 'number'].indexOf(typeof testArg)) {
+	    var _ret = (function () {
+	      var keys = isArray ? testArg : args;
+
+	      // return the decorator function, which on the next call will look for
+	      // the presence of a method name to determine if this is a wrapped method
+	      // or component
+	      return {
+	        v: function (target, methodName, descriptor) {
+	          return methodName ? methodFn({ target: target, descriptor: descriptor, keys: keys }) : (0, _class_decorator2['default'])(target, keys);
+	        }
+	      };
+	    })();
+
+	    if (typeof _ret === 'object') return _ret.v;
+	  } else {
+	    var methodName = args[1];
+
+	    // method decorators without keycode (which) arguments are not allowed.
+	    if (!methodName) {
+	      return _class_decorator2['default'].apply(undefined, args);
+	    } else {
+	      console.warn(methodName + ': Method decorators must have keycode arguments, so the decorator for this method will not do anything');
+	    }
+	  }
+	}
+
+	/**
+	 * keydownScoped
+	 *
+	 * Method decorator that will look for changes to its targeted component's
+	 * `keydown` props to decide when to trigger, rather than responding directly
+	 * to keydown events. This lets you specify a @keydown decorated class higher
+	 * up in the view hierarchy for larger scoping of keydown events, or for
+	 * programmatically sending keydown events as props into the components in order
+	 * to trigger decorated methods with matching keys.
+	 *
+	 * @access public
+	 * @param {Array} ...args  All (or no) arguments passed in from decoration
+	 * @return {Function} The decorated class or method
+	 */
+	function keydownScoped() {
+	  for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	    args[_key2] = arguments[_key2];
+	  }
+
+	  return _decorator.apply(undefined, [_method_decorator_scoped2['default']].concat(args));
+	}
+
+	/**
+	 * keydown
+	 *
+	 * The main decorator and default export, handles both classes and methods.
+	 *
+	 * @access public
+	 * @param {Array} ...args  All (or no) arguments passed in from decoration
+	 * @return {Function} The decorated class or method
+	 */
+	function keydown() {
+	  for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+	    args[_key3] = arguments[_key3];
+	  }
+
+	  return _decorator.apply(undefined, [_method_decorator2['default']].concat(args));
+	}
+
+	exports['default'] = keydown;
+	exports.keydownScoped = keydownScoped;
+
+/***/ },
+/* 76 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @module componentWrapper
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	var _get = function get(_x2, _x3, _x4) { var _again = true; _function: while (_again) { var object = _x2, property = _x3, receiver = _x4; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x2 = parent; _x3 = property; _x4 = receiver; _again = true; desc = parent = undefined; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var _react = __webpack_require__(28);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _store = __webpack_require__(77);
+
+	var _store2 = _interopRequireDefault(_store);
+
+	var _event_handlers = __webpack_require__(82);
+
+	/**
+	 * componentWrapper
+	 *
+	 * @access public
+	 * @param {object} WrappedComponent React component class to be wrapped
+	 * @param {array} [keys] The key(s) bound to the class
+	 * @return {object} The higher-order function that wraps the decorated class
+	 */
+	function componentWrapper(WrappedComponent) {
+	  var keys = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+	  var KeyBoardHelper = (function (_React$Component) {
+	    _inherits(KeyBoardHelper, _React$Component);
+
+	    function KeyBoardHelper(props) {
+	      _classCallCheck(this, KeyBoardHelper);
+
+	      _get(Object.getPrototypeOf(KeyBoardHelper.prototype), 'constructor', this).call(this, props);
+	      this.state = {
+	        event: null
+	      };
+	    }
+
+	    _createClass(KeyBoardHelper, [{
+	      key: 'componentDidMount',
+	      value: function componentDidMount() {
+	        (0, _event_handlers.onMount)(this);
+	      }
+	    }, {
+	      key: 'componentWillUnmount',
+	      value: function componentWillUnmount() {
+	        (0, _event_handlers.onUnmount)(this);
+	      }
+	    }, {
+	      key: 'handleKeyDown',
+	      value: function handleKeyDown(event) {
+	        var _this = this;
+
+	        // to simulate a keypress, set the event and then clear it in the callback
+	        this.setState({ event: event }, function () {
+	          return _this.setState({ event: null });
+	        });
+	      }
+	    }, {
+	      key: 'render',
+	      value: function render() {
+	        return _react2['default'].createElement(WrappedComponent, _extends({}, this.props, { keydown: this.state }));
+	      }
+	    }]);
+
+	    return KeyBoardHelper;
+	  })(_react2['default'].Component);
+
+	  _store2['default'].setBinding({ keys: keys, fn: KeyBoardHelper.prototype.handleKeyDown, target: KeyBoardHelper.prototype });
+
+	  return KeyBoardHelper;
+	}
+
+	exports['default'] = componentWrapper;
+	module.exports = exports['default'];
+
+/***/ },
+/* 77 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @module store
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
+
+	exports._resetStore = _resetStore;
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+
+	var _libKeys = __webpack_require__(78);
+
+	var _libMatch_keys = __webpack_require__(79);
+
+	var _libMatch_keys2 = _interopRequireDefault(_libMatch_keys);
+
+	var _libParse_keys = __webpack_require__(80);
+
+	var _libParse_keys2 = _interopRequireDefault(_libParse_keys);
+
+	var _libUuid = __webpack_require__(81);
+
+	var _libUuid2 = _interopRequireDefault(_libUuid);
+
+	/**
+	 * private
+	 * 
+	 */
+
+	// dict for class prototypes => bindings
+	var _handlers = new Map();
+
+	// all mounted instances that have keybindings
+	var _instances = new Set();
+
+	// for testing
+
+	function _resetStore() {
+	  _handlers.clear();
+	  _instances.clear();
+	}
+
+	/**
+	 * public
+	 *
+	 */
+
+	var Store = {
+
+	  /**
+	   * activate
+	   *
+	   * @access public
+	   * @param {object} instance Instantiated class that extended React.Component, to be focused to receive keydown events
+	   */
+	  activate: function activate(instances) {
+	    var instancesArray = [].concat(instances);
+
+	    // if no components were found as ancestors of the event target,
+	    // effectively deactivate keydown handling by capping the set of instances
+	    // with `null`.
+	    if (!instancesArray.length) {
+	      _instances.add(null);
+	    } else {
+	      _instances['delete'](null);
+
+	      // deleting and then adding the instance(s) has the effect of sorting the set
+	      // according to instance activation (ascending)
+	      instancesArray.forEach(function (instance) {
+	        _instances['delete'](instance);
+	        _instances.add(instance);
+	      });
+	    }
+	  },
+
+	  /**
+	   * deleteInstance
+	   *
+	   * @access public
+	   * @param {object} target Instantiated class that extended React.Component
+	   * @return {boolean} The value set.has( target ) would have returned prior to deletion
+	   */
+	  deleteInstance: function deleteInstance(target) {
+	    _instances['delete'](target);
+	  },
+
+	  findBindingForEvent: function findBindingForEvent(event) {
+	    if (!_instances.has(null)) {
+	      var keyMatchesEvent = function keyMatchesEvent(keySet) {
+	        return (0, _libMatch_keys2['default'])({ keySet: keySet, event: event });
+	      };
+
+	      // loop through instances in reverse activation order so that most
+	      // recently activated instance gets first dibs on event
+	      var _iteratorNormalCompletion = true;
+	      var _didIteratorError = false;
+	      var _iteratorError = undefined;
+
+	      try {
+	        for (var _iterator = [].concat(_toConsumableArray(_instances)).reverse()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	          var instance = _step.value;
+
+	          var bindings = this.getBinding(instance.constructor.prototype);
+	          var _iteratorNormalCompletion2 = true;
+	          var _didIteratorError2 = false;
+	          var _iteratorError2 = undefined;
+
+	          try {
+	            for (var _iterator2 = bindings[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	              var _step2$value = _slicedToArray(_step2.value, 2);
+
+	              var keySets = _step2$value[0];
+	              var fn = _step2$value[1];
+
+	              if ((0, _libKeys.allKeys)(keySets) || keySets.some(keyMatchesEvent)) {
+	                // return when matching keybinding is found - i.e. only one
+	                // keybound component can respond to a given key code. to get around this,
+	                // scope a common ancestor component class with @keydown and use
+	                // @keydownScoped to bind the duplicate keys in your child components
+	                // (or just inspect nextProps.keydown.event).
+	                return { fn: fn, instance: instance };
+	              }
+	            }
+	          } catch (err) {
+	            _didIteratorError2 = true;
+	            _iteratorError2 = err;
+	          } finally {
+	            try {
+	              if (!_iteratorNormalCompletion2 && _iterator2['return']) {
+	                _iterator2['return']();
+	              }
+	            } finally {
+	              if (_didIteratorError2) {
+	                throw _iteratorError2;
+	              }
+	            }
+	          }
+	        }
+	      } catch (err) {
+	        _didIteratorError = true;
+	        _iteratorError = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion && _iterator['return']) {
+	            _iterator['return']();
+	          }
+	        } finally {
+	          if (_didIteratorError) {
+	            throw _iteratorError;
+	          }
+	        }
+	      }
+	    }
+	    return null;
+	  },
+
+	  /**
+	   * getBinding
+	   *
+	   * @access public
+	   * @param {object} target Class used as key in dict of key bindings
+	   * @return {object} The object containing bindings for the given class
+	   */
+	  getBinding: function getBinding(_ref) {
+	    var __reactKeydownUUID = _ref.__reactKeydownUUID;
+
+	    return _handlers.get(__reactKeydownUUID);
+	  },
+
+	  /**
+	   * getInstances
+	   *
+	   * @access public
+	   * @return {set} All stored instances (all mounted component instances with keybindings)
+	   */
+	  getInstances: function getInstances() {
+	    return _instances;
+	  },
+
+	  /**
+	   * isEmpty
+	   *
+	   * @access public
+	   * @return {number} Size of the set of all stored instances
+	   */
+	  isEmpty: function isEmpty() {
+	    return !_instances.size;
+	  },
+
+	  /**
+	   * setBinding
+	   *
+	   * @access public
+	   * @param {object} args All arguments necessary to set the binding
+	   * @param {array} args.keys Key codes that should trigger the fn
+	   * @param {function} args.fn The callback to be triggered when given keys are pressed
+	   * @param {object} args.target The decorated class
+	   */
+	  setBinding: function setBinding(_ref2) {
+	    var keys = _ref2.keys;
+	    var fn = _ref2.fn;
+	    var target = _ref2.target;
+
+	    var keySets = keys ? (0, _libParse_keys2['default'])(keys) : (0, _libKeys.allKeys)();
+	    var __reactKeydownUUID = target.__reactKeydownUUID;
+
+	    if (!__reactKeydownUUID) {
+	      target.__reactKeydownUUID = (0, _libUuid2['default'])();
+	      _handlers.set(target.__reactKeydownUUID, new Map([[keySets, fn]]));
+	    } else {
+	      _handlers.get(__reactKeydownUUID).set(keySets, fn);
+	    }
+	  }
+	};
+
+	exports['default'] = Store;
+
+/***/ },
+/* 78 */
+/***/ function(module, exports) {
+
+	// TODO: Need better, more complete, and more methodical key definitions
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+	exports.allKeys = allKeys;
+	var Keys = {
+	  backspace: 8,
+	  del: 46,
+	  'delete': 46,
+	  tab: 9,
+	  enter: 13,
+	  'return': 13,
+	  esc: 27,
+	  space: 32,
+	  left: 37,
+	  up: 38,
+	  right: 39,
+	  down: 40,
+	  ';': 186,
+	  '=': 187,
+	  ',': 188,
+	  '-': 189,
+	  '.': 190,
+	  '/': 191,
+	  '`': 192,
+	  '[': 219,
+	  '\\': 220,
+	  ']': 221
+	};
+
+	// Add uppercase versions of keys above for backwards compatibility
+	Object.keys(Keys).forEach(function (key) {
+	  return Keys[key.toUpperCase()] = Keys[key];
+	});
+
+	'0123456789'.split('').forEach(function (num, index) {
+	  return Keys[num] = index + 48;
+	});
+
+	'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(function (letter, index) {
+	  Keys[letter] = index + 65;
+	  Keys[letter.toLowerCase()] = index + 65;
+	});
+
+	// fn keys
+	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].forEach(function (item, index) {
+	  return Keys['f' + index] = 111 + index;
+	});
+
+	var modifiers = {
+	  control: 'ctrl',
+	  ctrl: 'ctrl',
+	  shift: 'shift',
+	  meta: 'meta',
+	  cmd: 'meta',
+	  command: 'meta',
+	  option: 'alt',
+	  alt: 'alt'
+	};
+
+	exports.modifiers = modifiers;
+
+	function allKeys(arg) {
+	  return arg ? arg.constructor === Symbol || typeof arg === 'symbol' : Symbol('allKeys');
+	}
+
+	exports['default'] = Keys;
+
+/***/ },
+/* 79 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	var _keys = __webpack_require__(78);
+
+	var modKeys = Object.keys(_keys.modifiers);
+
+	function matchKeys(_ref) {
+	  var _ref$keySet = _ref.keySet;
+	  var key = _ref$keySet.key;
+	  var _ref$keySet$modifiers = _ref$keySet.modifiers;
+	  var modifiers = _ref$keySet$modifiers === undefined ? [] : _ref$keySet$modifiers;
+	  var event = _ref.event;
+
+	  var keysMatch = false;
+	  if (key === event.which) {
+	    (function () {
+	      var evtModKeys = modKeys.filter(function (modKey) {
+	        return event[modKey + 'Key'];
+	      }).sort();
+	      keysMatch = modifiers.length === evtModKeys.length && modifiers.every(function (modKey, index) {
+	        return evtModKeys[index] === modKey;
+	      });
+	    })();
+	  }
+	  return keysMatch;
+	}
+
+	exports['default'] = matchKeys;
+	module.exports = exports['default'];
+
+/***/ },
+/* 80 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _keys = __webpack_require__(78);
+
+	var _keys2 = _interopRequireDefault(_keys);
+
+	function parseKeys(keysArray) {
+	  return keysArray.map(function (key) {
+	    var keySet = { key: key };
+	    if (typeof key === 'string') {
+	      var keyString = key.toLowerCase().trim();
+	      var matches = keyString.split(/\s?\+\s?/);
+	      keySet = matches.length === 1 ? { key: _keys2['default'][keyString] } : {
+	        key: _keys2['default'][matches.pop()],
+	        modifiers: matches.map(function (modKey) {
+	          return _keys.modifiers[modKey];
+	        }).sort()
+	      };
+	    }
+	    return keySet;
+	  });
+	}
+
+	exports['default'] = parseKeys;
+	module.exports = exports['default'];
+
+/***/ },
+/* 81 */
+/***/ function(module, exports) {
+
+	// Counter being incremented. JS is single-threaded, so it'll Just Work™.
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports["default"] = uuid;
+	var __counter = 1;
+
+	/**
+	 * Returns a process-wide unique identifier.
+	 */
+
+	function uuid() {
+	  return "uid-" + __counter++;
+	}
+
+	module.exports = exports["default"];
+
+/***/ },
+/* 82 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* eslint-disable no-use-before-define */
+	/**
+	 * @module eventHandlers
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+	exports._onClick = _onClick;
+	exports._onKeyDown = _onKeyDown;
+	exports._shouldConsider = _shouldConsider;
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+
+	var _libDom_helpers = __webpack_require__(83);
+
+	var _libDom_helpers2 = _interopRequireDefault(_libDom_helpers);
+
+	var _libListeners = __webpack_require__(84);
+
+	var _libListeners2 = _interopRequireDefault(_libListeners);
+
+	var _store = __webpack_require__(77);
+
+	var _store2 = _interopRequireDefault(_store);
+
+	/**
+	 * private
+	 *
+	 */
+
+	/**
+	 * _onClick
+	 *
+	 * @access private
+	 * @param {object} event The click event object
+	 * @param {object} event.target The DOM node from the click event
+	 */
+
+	function _onClick(_ref) {
+	  var target = _ref.target;
+
+	  _store2['default'].activate([].concat(_toConsumableArray(_store2['default'].getInstances())).reduce(_libDom_helpers2['default'].findContainerNodes(target), []).sort(_libDom_helpers2['default'].sortByDOMPosition).map(function (item) {
+	    return item.instance;
+	  }));
+	}
+
+	/**
+	 * _onKeyDown: The keydown event callback
+	 *
+	 * @access private
+	 * @param {object} event The keydown event object
+	 * @param {number} event.which The key code (which) received from the keydown event
+	 */
+
+	function _onKeyDown(event) {
+	  var forceConsider = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+	  if (forceConsider || _shouldConsider(event)) {
+	    var _ref2 = _store2['default'].findBindingForEvent(event) || {};
+
+	    var fn = _ref2.fn;
+	    var instance = _ref2.instance;
+
+	    if (fn) {
+	      fn.call(instance, event);
+	      return true;
+	    }
+	  }
+	  return false;
+	}
+
+	/**
+	 * _shouldConsider: Conditions for proceeding with key event handling
+	 *
+	 * @access private
+	 * @param {object} event The keydown event object
+	 * @param {object} event.target The node origin of the event
+	 * @param {string} event.target.tagName The name of the element tag
+	 * @param {number} event.target.which The key pressed
+	 * @return {boolean} Whether to continue procesing the keydown event
+	 */
+
+	function _shouldConsider(_ref3) {
+	  var ctrlKey = _ref3.ctrlKey;
+	  var tagName = _ref3.target.tagName;
+
+	  return ! ~['INPUT', 'SELECT', 'TEXTAREA'].indexOf(tagName) || ctrlKey;
+	}
+
+	/**
+	 * public
+	 *
+	 */
+
+	/**
+	 * onMount
+	 *
+	 * @access public
+	 */
+	function onMount(instance) {
+	  // have to bump this to next event loop because component mounting routinely
+	  // preceeds the dom click event that triggered the mount (wtf?)
+	  setTimeout(function () {
+	    return _store2['default'].activate(instance);
+	  }, 0);
+	  _libListeners2['default'].bindKeys(_onKeyDown);
+	  _libListeners2['default'].bindClicks(_onClick);
+	  _libDom_helpers2['default'].bindFocusables(instance, _store2['default'].activate);
+	}
+
+	/**
+	 * onUnmount
+	 *
+	 * @access public
+	 */
+	function onUnmount(instance) {
+	  _store2['default'].deleteInstance(instance);
+	  if (_store2['default'].isEmpty()) {
+	    _libListeners2['default'].unbindClicks(_onClick);
+	    _libListeners2['default'].unbindKeys(_onKeyDown);
+	  }
+	}
+
+	exports.onMount = onMount;
+	exports.onUnmount = onUnmount;
+
+/***/ },
+/* 83 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @module domHelpers
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _reactDom = __webpack_require__(45);
+
+	var _reactDom2 = _interopRequireDefault(_reactDom);
+
+	var focusableSelector = 'a[href], button, input, object, select, textarea, [tabindex]';
+
+	/**
+	 * bindFocusables: Find any focusable child elements of the component instance and
+	 * add an onFocus handler to focus our keydown handlers on the parent component
+	 * when user keys applies focus to the element.
+	 *
+	 * NOTE: One limitation of this right now is that if you tab out of the
+	 * component, _focusedInstance will still be set until next click or mount or
+	 * controlled focus.
+	 *
+	 * @access public
+	 * @param {object} instance The key-bound component instance
+	 * @param {callback} activateOnFocus The fn to fire when element is focused
+	 */
+	function bindFocusables(instance, activateOnFocus) {
+	  if (document.querySelectorAll) {
+	    var node = _reactDom2['default'].findDOMNode(instance);
+	    if (node) {
+	      var focusables = node.querySelectorAll(focusableSelector);
+	      if (focusables.length) {
+	        (function () {
+	          var onFocus = function onFocus(element) {
+	            var onFocusPrev = element.onfocus;
+	            return function (event) {
+	              activateOnFocus(instance);
+	              if (onFocusPrev) onFocusPrev.call(element, event);
+	            };
+	          };
+	          Array.prototype.slice.call(focusables).forEach(function (element) {
+	            return element.onfocus = onFocus(element);
+	          });
+	        })();
+	      }
+	    }
+	  }
+	}
+
+	/**
+	 * findContainerNodes: Called by our click handler to find instances with nodes
+	 * that are equal to or that contain the click target. Any that pass this test
+	 * will be recipients of the next keydown event.
+	 *
+	 * @access public
+	 * @param {object} target The click event.target DOM element
+	 * @return {function} Reducer function
+	 */
+	function findContainerNodes(target) {
+	  return function (memo, instance) {
+	    try {
+	      var node = _reactDom2['default'].findDOMNode(instance);
+	      if (node && (node === target || node.contains(target))) {
+	        memo.push({ instance: instance, node: node });
+	      }
+	    } finally {
+	      return memo;
+	    }
+	  };
+	}
+
+	/**
+	 * sortByDOMPosition: Called by our click handler to sort a list of instances
+	 * according to least -> most nested. This is so that if multiple keybound
+	 * instances have nodes that are ancestors of the click target, they will be
+	 * sorted to let the instance closest to the click target get first dibs on the
+	 * next key down event.
+	 */
+	function sortByDOMPosition(a, b) {
+	  return a.node.compareDocumentPosition(b.node) === 10 ? 1 : -1;
+	}
+
+	exports['default'] = { bindFocusables: bindFocusables, findContainerNodes: findContainerNodes, sortByDOMPosition: sortByDOMPosition };
+	module.exports = exports['default'];
+
+/***/ },
+/* 84 */
+/***/ function(module, exports) {
+
+	/**
+	 * @module Listeners
+	 *
+	 */
+
+	// flag for whether click listener has been bound to document
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+	var _clicksBound = false;
+
+	// flag for whether keydown listener has been bound to document
+	var _keysBound = false;
+
+	var Listeners = {
+	  /**
+	   * _bindKeys
+	   *
+	   * @access public
+	   */
+	  bindKeys: function bindKeys(callback) {
+	    if (!_keysBound) {
+	      document.addEventListener('keydown', callback);
+	      _keysBound = true;
+	    }
+	  },
+
+	  /**
+	   * unbindKeys
+	   *
+	   * @access public
+	   */
+	  unbindKeys: function unbindKeys(callback) {
+	    if (_keysBound) {
+	      document.removeEventListener('keydown', callback);
+	      _keysBound = false;
+	    }
+	  },
+
+	  /**
+	   * bindClicks
+	   *
+	   * @access public
+	   */
+	  bindClicks: function bindClicks(callback) {
+	    if (!_clicksBound) {
+	      document.addEventListener('click', callback);
+	      _clicksBound = true;
+	    }
+	  },
+
+	  /**
+	   * unbindClicks
+	   *
+	   * @access public
+	   */
+	  unbindClicks: function unbindClicks(callback) {
+	    if (_clicksBound) {
+	      document.removeEventListener('click', callback);
+	      _clicksBound = false;
+	    }
+	  }
+	};
+
+	exports['default'] = Listeners;
+	module.exports = exports['default'];
+
+/***/ },
+/* 85 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @module methodWrapper
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _store = __webpack_require__(77);
+
+	var _store2 = _interopRequireDefault(_store);
+
+	var _event_handlers = __webpack_require__(82);
+
+	/**
+	 * _isReactKeyDown
+	 *
+	 * @access private
+	 * @param {object} event The possibly synthetic event passed as an argument with
+	 * the method invocation.
+	 * @return {boolean}
+	 */
+	function _isReactKeyDown(event) {
+	  return event && typeof event === 'object' && event.nativeEvent instanceof window.KeyboardEvent && event.type === 'keydown';
+	}
+
+	/**
+	 * methodWrapper
+	 *
+	 * @access public
+	 * @param {object} args All arguments necessary for wrapping method
+	 * @param {object} args.target The decorated class
+	 * @param {object} args.descriptor Method descriptor
+	 * @param {array} args.keys The array of keys bound to the given method
+	 * @return {object} The method descriptor
+	 */
+	function methodWrapper(_ref) {
+	  var target = _ref.target;
+	  var descriptor = _ref.descriptor;
+	  var keys = _ref.keys;
+
+	  var fn = descriptor.value;
+
+	  // if we haven't already created a binding for this class (via another
+	  // decorated method), wrap these lifecycle methods.
+	  if (!_store2['default'].getBinding(target)) {
+	    (function () {
+	      var componentDidMount = target.componentDidMount;
+	      var componentWillUnmount = target.componentWillUnmount;
+
+	      target.componentDidMount = function () {
+	        (0, _event_handlers.onMount)(this);
+	        if (componentDidMount) return componentDidMount.call(this);
+	      };
+
+	      target.componentWillUnmount = function () {
+	        (0, _event_handlers.onUnmount)(this);
+	        if (componentWillUnmount) return componentWillUnmount.call(this);
+	      };
+	    })();
+	  }
+
+	  // add this binding of keys and method to the target's bindings
+	  _store2['default'].setBinding({ keys: keys, target: target, fn: fn });
+
+	  descriptor.value = function () {
+	    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	      args[_key] = arguments[_key];
+	    }
+
+	    var maybeEvent = args[0];
+
+	    if (_isReactKeyDown(maybeEvent)) {
+	      // proxy method in order to use @keydown as filter for keydown events coming
+	      // from an actual onKeyDown binding (as identified by react's addition of
+	      // 'nativeEvent' + type === 'keydown')
+	      if (!maybeEvent.ctrlKey) {
+	        // we already whitelist shortcuts with ctrl modifiers so if we were to
+	        // fire it again here the method would trigger twice. see https://github.com/glortho/react-keydown/issues/38
+	        return (0, _event_handlers._onKeyDown)(maybeEvent, true);
+	      }
+	    } else if (!maybeEvent || !(maybeEvent instanceof window.KeyboardEvent) || maybeEvent.type !== 'keydown') {
+	      // if our first argument is a keydown event it is being handled by our
+	      // binding system. if it's anything else, just pass through.
+	      return fn.call.apply(fn, [this].concat(args));
+	    }
+	  };
+
+	  return descriptor;
+	}
+
+	exports['default'] = methodWrapper;
+	module.exports = exports['default'];
+
+/***/ },
+/* 86 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @module methodWrapperScoped
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _libMatch_keys = __webpack_require__(79);
+
+	var _libMatch_keys2 = _interopRequireDefault(_libMatch_keys);
+
+	var _libParse_keys = __webpack_require__(80);
+
+	var _libParse_keys2 = _interopRequireDefault(_libParse_keys);
+
+	/**
+	 * _shouldTrigger
+	 *
+	 * @access private
+	 * @param {object} thisProps Exsting props from the wrapped component
+	 * @param {object} thisProps.keydown The namespaced state from the higher-order
+	 * component (class_decorator)
+	 * @param {object} nextProps The incoming props from the wrapped component
+	 * @param {object} nextProps.keydown The namescaped state from the higher-order
+	 * component (class_decorator)
+	 * @param {array} keys The keys bound to the decorated method
+	 * @return {boolean} Whether all tests have passed
+	 */
+	function _shouldTrigger(_ref, keydownNext) {
+	  var keydownThis = _ref.keydown;
+
+	  return keydownNext && keydownNext.event && !keydownThis.event;
+	}
+
+	/**
+	 * methodWrapperScoped
+	 *
+	 * @access public
+	 * @param {object} args All args necessary for decorating the method
+	 * @param {object} args.target The decorated method's class object
+	 * @param {object} args.descriptor The method's descriptor object
+	 * @param {array} args.keys The key codes bound to the decorated method
+	 * @return {object} The method's descriptor object
+	 */
+	function methodWrapperScoped(_ref2) {
+	  var target = _ref2.target;
+	  var descriptor = _ref2.descriptor;
+	  var keys = _ref2.keys;
+	  var componentWillReceiveProps = target.componentWillReceiveProps;
+
+	  var fn = descriptor.value;
+	  if (!keys) {
+	    console.warn(fn + ': keydownScoped requires one or more keys');
+	  } else {
+	    (function () {
+	      var keySets = (0, _libParse_keys2['default'])(keys);
+
+	      // wrap the component's lifecycle method to intercept key codes coming down
+	      // from the wrapped/scoped component up the view hierarchy. if new keydown
+	      // event has arrived and the key codes match what was specified in the
+	      // decorator, call the wrapped method.
+	      target.componentWillReceiveProps = function (nextProps) {
+	        var keydown = nextProps.keydown;
+
+	        if (_shouldTrigger(this.props, keydown)) {
+	          if (keySets.some(function (keySet) {
+	            return (0, _libMatch_keys2['default'])({ keySet: keySet, event: keydown.event });
+	          })) {
+	            return fn.call(this, keydown.event);
+	          }
+	        }
+
+	        for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	          args[_key - 1] = arguments[_key];
+	        }
+
+	        if (componentWillReceiveProps) return componentWillReceiveProps.call.apply(componentWillReceiveProps, [this, nextProps].concat(args));
+	      };
+	    })();
+	  }
+
+	  return descriptor;
+	}
+
+	exports['default'] = methodWrapperScoped;
+	module.exports = exports['default'];
+
+/***/ },
+/* 87 */
+/***/ function(module, exports, __webpack_require__) {
+
 	/**
 	 * Copyright (c) 2015, Facebook, Inc.
 	 * All rights reserved.
@@ -6652,7 +7963,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = FixedDataTableColumn;
 
 /***/ },
-/* 74 */
+/* 88 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -6734,7 +8045,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = FixedDataTableColumnGroup;
 
 /***/ },
-/* 75 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**

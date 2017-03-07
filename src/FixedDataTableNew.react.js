@@ -30,6 +30,7 @@ var invariant = require('invariant');
 var joinClasses = require('joinClasses');
 var shallowEqual = require('shallowEqual');
 var translateDOMPositionXY = require('translateDOMPositionXY');
+var keydown = require('react-keydown');
 
 var {PropTypes} = React;
 var ReactChildren = React.Children;
@@ -391,10 +392,31 @@ var FixedDataTable = React.createClass({
     this._reportContentHeight();
   },
 
+  @keydown.default('up')
+  KeyUp() {
+    var focusedRowIndex = this.state.focusedRowIndex > 0 ? this.state.focusedRowIndex - 1 : 0;
+    var scrollState = this._scrollHelper.scrollRowIntoView(focusedRowIndex);
+    var firstRowIndex = scrollState.index;
+    var firstRowOffset = scrollState.offset;
+    var scrollY = scrollState.position;
+    var newState = Object.assign({}, {focusedRowIndex,firstRowIndex,firstRowOffset,scrollY})
+    this.setState(newState);
+  },
+
+  @keydown.default('down')
+  keyDown() {
+    var focusedRowIndex = this.state.focusedRowIndex < this.state.rowsCount ? this.state.focusedRowIndex + 1 : this.state.rowsCount
+    var scrollState = this._scrollHelper.scrollRowIntoView(focusedRowIndex);
+    var firstRowIndex = scrollState.index;
+    var firstRowOffset = scrollState.offset;
+    var scrollY = scrollState.position;
+    var newState = Object.assign({}, {focusedRowIndex,firstRowIndex,firstRowOffset,scrollY})
+    this.setState(newState);
+  },
+
   render() /*object*/ {
     var state = this.state;
     var props = this.props;
-
     var groupHeader;
     if (state.useGroupHeader) {
       groupHeader = (
@@ -606,6 +628,7 @@ var FixedDataTable = React.createClass({
         showLastRowBorder={true}
         width={state.width}
         rowPositionGetter={this._scrollHelper.getRowPosition}
+        focusedRowIndex={state.focusedRowIndex}
       />
     );
   },
@@ -901,7 +924,7 @@ var FixedDataTable = React.createClass({
     }
 
     this._scrollHelper.setViewportHeight(bodyHeight);
-
+     
     // The order of elements in this object metters and bringing bodyHeight,
     // height or useGroupHeader to the top can break various features
     var newState = {
@@ -924,7 +947,7 @@ var FixedDataTable = React.createClass({
       scrollContentHeight,
       scrollX,
       scrollY,
-
+      focusedRowIndex: 0,
       // These properties may overwrite properties defined in
       // columnInfo and props
       bodyHeight,
